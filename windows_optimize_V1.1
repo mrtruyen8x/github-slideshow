@@ -1,0 +1,583 @@
+@echo off
+title Toi Uu Windows 10-11 - Mr_Truyen
+color 0A
+chcp 65001 > nul
+setlocal enabledelayedexpansion
+
+:: ========================================
+:: PHẦN KHỞI ĐỘNG VÀ KIỂM TRA
+:: ========================================
+
+:: Kiểm tra quyền Admin
+net session >nul 2>&1
+if %errorLevel% NEQ 0 (
+    echo [ERROR] Vui lòng chạy script này với quyền Administrator.
+    echo.
+    echo Huong dan: Click chuot phai -> Run as Administrator
+    pause
+    exit /b 1
+)
+
+:: Kiểm tra phiên bản Windows
+for /f "tokens=4-5 delims=. " %%i in ('ver') do (
+    set /a MAJOR=%%i
+    set /a MINOR=%%j
+)
+
+:: Kiểm tra Windows 10/11
+systeminfo | findstr /B /C:"OS Name" | findstr /I "Windows 10" >nul
+if %errorLevel% EQU 0 (
+    set WIN_VER=10
+) else (
+    systeminfo | findstr /B /C:"OS Name" | findstr /I "Windows 11" >nul
+    if %errorLevel% EQU 0 (
+        set WIN_VER=11
+    ) else (
+        echo [ERROR] Script chi ho tro Windows 10/11
+        pause
+        exit /b 1
+    )
+)
+
+echo.
+echo ========================================
+echo     TỐI ƯU HÓA WINDOWS %WIN_VER% (%MAJOR%.%MINOR%)
+echo ========================================
+echo.
+
+:: Cảnh báo bảo mật
+echo [CANH BAO] Script nay se thay doi he thong Windows!
+echo [CANH BAO] Hay backup du lieu quan trong truoc khi tiep tuc!
+echo [CANH BAO] Ban co muon tiep tuc? (Y/N)
+choice /c YN /n
+if errorlevel 2 (
+    echo Da huy.
+    exit /b 0
+)
+
+:: Tạo điểm khôi phục hệ thống
+echo.
+echo ==== TAO DIEM KHOI PHUC HE THONG ====
+powershell -Command "Enable-ComputerRestore -Drive '$env:SystemDrive'" 2>nul
+powershell -Command "Checkpoint-Computer -Description 'Truoc_khi_toi_uu_he_thong' -RestorePointType 'MODIFY_SETTINGS'" 2>nul
+if !errorlevel! EQU 0 (
+    echo [SUCCESS] Da tao diem khoi phuc thanh cong
+) else (
+    echo [WARNING] Khong the tao diem khoi phuc. Tiep tuc? (Y/N)
+    choice /c YN /n
+    if errorlevel 2 exit /b 1
+)
+
+:: Tạo thư mục log
+set LOG_FILE=%TEMP%\windows_optimize_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%.log
+echo Script bat dau luc: %date% %time% > "%LOG_FILE%"
+
+:: ========================================
+:: MENU CHÍNH - ĐÃ ĐƯỢC TỐI ƯU
+:: ========================================
+
+:MENU
+cls
+echo ========================================
+echo     TỐI ƯU WINDOWS %WIN_VER% - MENU
+echo ========================================
+echo.
+echo [1]  Toi uu co ban (Bloatware, Telemetry)
+echo [2]  Toi uu hieu suat (Performance tweaks)
+echo [3]  Toi uu mang & Internet
+echo [4]  Toi uu o cung (SSD/HDD)
+echo [5]  Toi uu bo nho & RAM
+echo [6]  Don dep he thong
+echo [7]  Toi uu gaming
+echo [8]  Toi uu pin (Laptop)
+echo [9]  Tuychinh nang cao
+echo [10] TOI UU TOAN DIEN (All-in-One)
+echo [11] Khoi phuc mac dinh (Restore)
+echo [0]  Thoat
+echo.
+set /p choice=">> Nhap lua chon: "
+
+if "%choice%"=="" goto MENU
+if "%choice%"=="0" goto EXIT_SCRIPT
+if "%choice%"=="1" goto BASIC_OPTIMIZE
+if "%choice%"=="2" goto PERFORMANCE_OPTIMIZE
+if "%choice%"=="3" goto NETWORK_OPTIMIZE
+if "%choice%"=="4" goto STORAGE_OPTIMIZE
+if "%choice%"=="5" goto MEMORY_OPTIMIZE
+if "%choice%"=="6" goto CLEAN_OPTIMIZE
+if "%choice%"=="7" goto GAMING_OPTIMIZE
+if "%choice%"=="8" goto POWER_OPTIMIZE
+if "%choice%"=="9" goto ADVANCED_OPTIMIZE
+if "%choice%"=="10" goto ALL_OPTIMIZE
+if "%choice%"=="11" goto RESTORE_DEFAULT
+goto MENU
+
+:: ========================================
+:: CÁC CHỨC NĂNG CHÍNH
+:: ========================================
+
+:BASIC_OPTIMIZE
+echo.
+echo ==== TOI UU CO BAN ====
+call :LOG_ACTION "Bat dau toi uu co ban"
+call :REMOVE_BLOATWARE
+call :DISABLE_TELEMETRY
+call :DISABLE_CORTANA
+call :DISABLE_ONEDRIVE
+call :LOG_ACTION "Toi uu co ban hoan tat"
+echo.
+echo [SUCCESS] Toi uu co ban hoan tat!
+pause
+goto MENU
+
+:PERFORMANCE_OPTIMIZE
+echo.
+echo ==== TOI UU HIEU SUAT ====
+call :LOG_ACTION "Bat dau toi uu hieu suat"
+call :DISABLE_SYSMAIN
+call :ENABLE_ULTIMATE_PERF
+call :OPTIMIZE_SERVICES
+call :DISABLE_VISUAL_EFFECTS
+call :LOG_ACTION "Toi uu hieu suat hoan tat"
+echo.
+echo [SUCCESS] Toi uu hieu suat hoan tat!
+pause
+goto MENU
+
+:NETWORK_OPTIMIZE
+echo.
+echo ==== TOI UU MANG ====
+call :LOG_ACTION "Bat dau toi uu mang"
+call :OPTIMIZE_NETWORK
+call :DISABLE_NETWORK_THROTTLING
+call :OPTIMIZE_DNS
+call :LOG_ACTION "Toi uu mang hoan tat"
+echo.
+echo [SUCCESS] Toi uu mang hoan tat!
+pause
+goto MENU
+
+:STORAGE_OPTIMIZE
+echo.
+echo ==== TOI UU O CUNG ====
+call :LOG_ACTION "Bat dau toi uu o cung"
+call :OPTIMIZE_STORAGE
+call :DISABLE_HIBERNATION
+call :OPTIMIZE_PAGEFILE
+call :LOG_ACTION "Toi uu o cung hoan tat"
+echo.
+echo [SUCCESS] Toi uu o cung hoan tat!
+pause
+goto MENU
+
+:MEMORY_OPTIMIZE
+echo.
+echo ==== TOI UU BO NHO ====
+call :LOG_ACTION "Bat dau toi uu bo nho"
+call :OPTIMIZE_MEMORY
+call :DISABLE_PREFETCH
+call :CLEAR_MEMORY_CACHE
+call :LOG_ACTION "Toi uu bo nho hoan tat"
+echo.
+echo [SUCCESS] Toi uu bo nho hoan tat!
+pause
+goto MENU
+
+:CLEAN_OPTIMIZE
+echo.
+echo ==== DON DEP HE THONG ====
+call :LOG_ACTION "Bat dau don dep he thong"
+call :CLEAN_TEMP_FILES
+call :CLEAN_CACHE
+call :OPTIMIZE_STARTUP
+call :LOG_ACTION "Don dep he thong hoan tat"
+echo.
+echo [SUCCESS] Don dep he thong hoan tat!
+pause
+goto MENU
+
+:GAMING_OPTIMIZE
+echo.
+echo ==== TOI UU GAMING ====
+call :LOG_ACTION "Bat dau toi uu gaming"
+call :DISABLE_GAME_BAR
+call :OPTIMIZE_GPU
+call :PRIORITIZE_GAMING
+call :LOG_ACTION "Toi uu gaming hoan tat"
+echo.
+echo [SUCCESS] Toi uu gaming hoan tat!
+pause
+goto MENU
+
+:POWER_OPTIMIZE
+echo.
+echo ==== TOI UU PIN ====
+call :LOG_ACTION "Bat dau toi uu pin"
+call :OPTIMIZE_POWER
+call :DISABLE_POWER_THROTTLING
+call :BATTERY_MAINTENANCE
+call :LOG_ACTION "Toi uu pin hoan tat"
+echo.
+echo [SUCCESS] Toi uu pin hoan tat!
+pause
+goto MENU
+
+:ADVANCED_OPTIMIZE
+echo.
+echo ==== TUY CHINH NANG CAO ====
+call :LOG_ACTION "Bat dau tuy chinh nang cao"
+call :SECURITY_TWEAKS
+call :PRIVACY_OPTIMIZE
+call :REGISTRY_TWEAKS
+call :LOG_ACTION "Tuy chinh nang cao hoan tat"
+echo.
+echo [SUCCESS] Tuy chinh nang cao hoan tat!
+pause
+goto MENU
+
+:ALL_OPTIMIZE
+echo.
+echo ==== TOI UU TOAN DIEN ====
+call :LOG_ACTION "Bat dau toi uu toan dien"
+call :REMOVE_BLOATWARE
+call :DISABLE_TELEMETRY
+call :DISABLE_CORTANA
+call :DISABLE_ONEDRIVE
+call :DISABLE_SYSMAIN
+call :ENABLE_ULTIMATE_PERF
+call :OPTIMIZE_SERVICES
+call :DISABLE_VISUAL_EFFECTS
+call :OPTIMIZE_NETWORK
+call :DISABLE_NETWORK_THROTTLING
+call :OPTIMIZE_DNS
+call :OPTIMIZE_STORAGE
+call :DISABLE_HIBERNATION
+call :OPTIMIZE_PAGEFILE
+call :OPTIMIZE_MEMORY
+call :DISABLE_PREFETCH
+call :CLEAR_MEMORY_CACHE
+call :CLEAN_TEMP_FILES
+call :CLEAN_CACHE
+call :OPTIMIZE_STARTUP
+call :DISABLE_GAME_BAR
+call :OPTIMIZE_GPU
+call :PRIORITIZE_GAMING
+call :OPTIMIZE_POWER
+call :DISABLE_POWER_THROTTLING
+call :BATTERY_MAINTENANCE
+call :SECURITY_TWEAKS
+call :PRIVACY_OPTIMIZE
+call :REGISTRY_TWEAKS
+call :LOG_ACTION "Toi uu toan dien hoan tat"
+echo.
+echo ========================================
+echo     TOI UU TOAN DIEN HOAN TAT!
+echo     VUI LONG KHOI DONG LAI MAY TINH
+echo ========================================
+echo.
+echo Log file duoc luu tai: %LOG_FILE%
+pause
+goto MENU
+
+:RESTORE_DEFAULT
+echo.
+echo ==== KHOI PHUC MAC DINH ====
+echo [CANH BAO] Hanh dong nay se khoi phuc nhung thay doi!
+echo Ban co muon tiep tuc? (Y/N)
+choice /c YN /n
+if errorlevel 2 goto MENU
+call :RESTORE_SETTINGS
+pause
+goto MENU
+
+:EXIT_SCRIPT
+cls
+echo.
+echo ========================================
+echo            THOAT CHUONG TRINH
+echo ========================================
+echo.
+echo Log file duoc luu tai: %LOG_FILE%
+echo.
+echo Cam on ban da su dung script!
+echo.
+timeout /t 2 >nul
+exit /b 0
+
+:: ========================================
+:: CÁC HÀM CHỨC NĂNG ĐÃ ĐƯỢC TỐI ƯU
+:: ========================================
+
+:LOG_ACTION
+echo [%time%] %~1 >> "%LOG_FILE%"
+goto :eof
+
+:REMOVE_BLOATWARE
+echo [1/4] Go bo cac Bloatware co ban...
+echo [%time%] Remove Bloatware >> "%LOG_FILE%"
+set BLOAT_APPS=Microsoft.BingWeather Microsoft.GetHelp Microsoft.Getstarted Microsoft.MicrosoftOfficeHub Microsoft.MicrosoftSolitaireCollection Microsoft.People Microsoft.WindowsCamera Microsoft.WindowsMaps Microsoft.ZuneMusic Microsoft.ZuneVideo Microsoft.YourPhone Microsoft.XboxApp
+
+for %%A in (%BLOAT_APPS%) do (
+    echo     Dang xoa %%A...
+    powershell -Command "Get-AppxPackage *%%A* | Remove-AppxPackage -ErrorAction SilentlyContinue" 2>nul
+    if !errorlevel! EQU 0 (
+        echo     Da xoa %%A
+    ) else (
+        echo     Khong tim thay %%A hoac da bi xoa
+    )
+)
+goto :eof
+
+:DISABLE_TELEMETRY
+echo [2/4] Tat Telemetry va thu thap du lieu...
+echo [%time%] Disable Telemetry >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /t REG_DWORD /d 0 /f >nul
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "AITEnable" /t REG_DWORD /d 0 /f >nul
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "DisableInventory" /t REG_DWORD /d 1 /f >nul
+
+:: Tat Service DiagTrack
+sc config "DiagTrack" start=disabled >nul
+sc stop "DiagTrack" >nul 2>&1
+:: Tat Service dmwappushservice
+sc config "dmwappushservice" start=disabled >nul
+sc stop "dmwappushservice" >nul 2>&1
+goto :eof
+
+:DISABLE_CORTANA
+echo [3/4] Tat Cortana...
+echo [%time%] Disable Cortana >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowCortana" /t REG_DWORD /d 0 /f >nul
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "AllowSearchToUseLocation" /t REG_DWORD /d 0 /f >nul
+goto :eof
+
+:DISABLE_ONEDRIVE
+echo [4/4] Vo hieu hoa OneDrive...
+echo [%time%] Disable OneDrive >> "%LOG_FILE%"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "OneDrive" /t REG_SZ /d "" /f >nul
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /t REG_DWORD /d 1 /f >nul
+taskkill /f /im OneDrive.exe >nul 2>&1
+goto :eof
+
+:DISABLE_SYSMAIN
+echo [1/4] Tat SysMain/Superfetch...
+echo [%time%] Disable SysMain >> "%LOG_FILE%"
+sc config "SysMain" start=disabled >nul
+sc stop "SysMain" >nul 2>&1
+goto :eof
+
+:ENABLE_ULTIMATE_PERF
+echo [2/4] Kich hoat che do Ultimate Performance...
+echo [%time%] Enable Ultimate Performance >> "%LOG_FILE%"
+powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749d3d6 >nul 2>&1
+powercfg -setactive e9a42b02-d5df-448d-aa00-03f14749d3d6 >nul 2>&1
+echo     Da kich hoat che do Ultimate Performance.
+goto :eof
+
+:OPTIMIZE_SERVICES
+echo [3/4] Toi uu Services he thong...
+echo [%time%] Optimize Services >> "%LOG_FILE%"
+:: Danh sach services co the tat (KHONG BAO GOM Spooler)
+:: CHỈ TẮT CÁC DỊCH VỤ KHÔNG QUAN TRỌNG, GIỮ LẠI Spooler
+set SERVICES_TO_DISABLE=Fax WSearch
+
+for %%S in (%SERVICES_TO_DISABLE%) do (
+    echo     Dang tat service %%S...
+    sc config "%%S" start=disabled >nul
+    sc stop "%%S" >nul 2>&1
+)
+echo     GIU NGUYEN Spooler de in an binh thuong.
+goto :eof
+
+:DISABLE_VISUAL_EFFECTS
+echo [4/4] Tat hieu ung hinh anh...
+echo [%time%] Disable Visual Effects >> "%LOG_FILE%"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t REG_DWORD /d 2 /f >nul
+reg add "HKCU\Control Panel\Desktop" /v "DragFullWindows" /t REG_SZ /d "0" /f >nul
+reg add "HKCU\Control Panel\Desktop" /v "MenuShowDelay" /t REG_SZ /d "0" /f >nul
+reg add "HKCU\Control Panel\Desktop" /v "UserPreferencesMask" /t REG_BINARY /d "9012008012000000" /f >nul
+goto :eof
+
+:OPTIMIZE_NETWORK
+echo [1/3] Toi uu Network Interface...
+echo [%time%] Optimize Network >> "%LOG_FILE%"
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpNoDelay" /t REG_DWORD /d 1 /f >nul
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpAckFrequency" /t REG_DWORD /d 1 /f >nul
+goto :eof
+
+:DISABLE_NETWORK_THROTTLING
+echo [2/3] Tat Network Throttling...
+echo [%time%] Disable Network Throttling >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NetworkThrottlingIndex" /t REG_DWORD /d 0xFFFFFFFF /f >nul
+goto :eof
+
+:OPTIMIZE_DNS
+echo [3/3] Cai dat DNS Google va Flush DNS...
+echo [%time%] Optimize DNS >> "%LOG_FILE%"
+netsh interface ip set dns "Ethernet" static 8.8.8.8 >nul 2>&1
+netsh interface ip add dns "Ethernet" 8.8.4.4 index=2 >nul 2>&1
+ipconfig /flushdns >nul
+echo     Da cai dat DNS Google va flush DNS cache.
+goto :eof
+
+:OPTIMIZE_STORAGE
+echo [1/3] Toi uu o cung...
+echo [%time%] Optimize Storage >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Microsoft\Dfrg\Settings" /v "EnableAutoDefrag" /t REG_DWORD /d 0 /f >nul
+:: Bat TRIM cho SSD
+fsutil behavior set DisableDeleteNotify 0 >nul
+goto :eof
+
+:DISABLE_HIBERNATION
+echo [2/3] Tat Hibernation...
+echo [%time%] Disable Hibernation >> "%LOG_FILE%"
+powercfg /hibernate off >nul
+goto :eof
+
+:OPTIMIZE_PAGEFILE
+echo [3/3] Toi uu Pagefile...
+echo [%time%] Optimize Pagefile >> "%LOG_FILE%"
+wmic computersystem set AutomaticManagedPagefile=True >nul
+goto :eof
+
+:OPTIMIZE_MEMORY
+echo [1/3] Toi uu Memory Management...
+echo [%time%] Optimize Memory >> "%LOG_FILE%"
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 1 /f >nul
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d 0 /f >nul
+goto :eof
+
+:DISABLE_PREFETCH
+echo [2/3] Tat Prefetch & Superfetch...
+echo [%time%] Disable Prefetch >> "%LOG_FILE%"
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v "EnablePrefetcher" /t REG_DWORD /d 0 /f >nul
+goto :eof
+
+:CLEAR_MEMORY_CACHE
+echo [3/3] Thu don bo nho cache...
+echo [%time%] Clear Memory Cache >> "%LOG_FILE%"
+powershell -Command "Clear-BCCache -Force" 2>nul
+goto :eof
+
+:CLEAN_TEMP_FILES
+echo [1/3] Don dep file tam...
+echo [%time%] Clean Temp Files >> "%LOG_FILE%"
+del /q /f /s "%temp%\*" >nul 2>&1
+del /q /f /s "C:\Windows\Temp\*" >nul 2>&1
+del /q /f /s "%USERPROFILE%\AppData\Local\Temp\*" >nul 2>&1
+powershell -Command "Remove-Item -Path '$env:LOCALAPPDATA\Temp\*' -Force -Recurse -ErrorAction SilentlyContinue" 2>nul
+echo     Da xoa file tam.
+goto :eof
+
+:CLEAN_CACHE
+echo [2/3] Xoa cache he thong...
+echo [%time%] Clean Cache >> "%LOG_FILE%"
+powershell -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue" 2>nul
+cleanmgr /sagerun:1 >nul 2>&1
+echo     Da xoa cache va khoi dong Disk Cleanup.
+goto :eof
+
+:OPTIMIZE_STARTUP
+echo [3/3] Phan tich Startup...
+echo [%time%] Optimize Startup >> "%LOG_FILE%"
+echo     De toi uu Startup, vui long mo Task Manager -> Tab Startup.
+echo     Hoac chay: taskmgr
+goto :eof
+
+:DISABLE_GAME_BAR
+echo [1/3] Tat Xbox Game Bar...
+echo [%time%] Disable Game Bar >> "%LOG_FILE%"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 0 /f >nul
+reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f >nul
+goto :eof
+
+:OPTIMIZE_GPU
+echo [2/3] Toi uu GPU...
+echo [%time%] Optimize GPU >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "PreferExternalGraphics" /t REG_DWORD /d 1 /f >nul
+goto :eof
+
+:PRIORITIZE_GAMING
+echo [3/3] Uu tien cho Gaming...
+echo [%time%] Prioritize Gaming >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d 8 /f >nul
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d 6 /f >nul
+goto :eof
+
+:OPTIMIZE_POWER
+echo [1/3] Chuyen sang che do High Performance...
+echo [%time%] Optimize Power >> "%LOG_FILE%"
+powercfg -setactive 8c5e7fc2-8b96-41a0-acb1-5a9e7c7e85a9 >nul 2>&1
+echo     Da chuyen sang che do High Performance.
+goto :eof
+
+:DISABLE_POWER_THROTTLING
+echo [2/3] Tat Power Throttling...
+echo [%time%] Disable Power Throttling >> "%LOG_FILE%"
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "Enabled" /t REG_DWORD /d 0 /f >nul
+goto :eof
+
+:BATTERY_MAINTENANCE
+echo [3/3] Huong dan bao tri Pin...
+echo [%time%] Battery Maintenance >> "%LOG_FILE%"
+echo     Kiem tra ung dung quan ly pin tu nha san xuat de toi uu.
+goto :eof
+
+:SECURITY_TWEAKS
+echo [1/3] Toi uu bao mat...
+echo [%time%] Security Tweaks >> "%LOG_FILE%"
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v "SmartScreenEnabled" /t REG_SZ /d "Off" /f >nul
+goto :eof
+
+:PRIVACY_OPTIMIZE
+echo [2/3] Toi uu quyen rieng tu...
+echo [%time%] Privacy Optimize >> "%LOG_FILE%"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v "Enabled" /t REG_DWORD /d 0 /f >nul
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f >nul
+goto :eof
+
+:REGISTRY_TWEAKS
+echo [3/3] Tweak Registry...
+echo [%time%] Registry Tweaks >> "%LOG_FILE%"
+reg add "HKCU\Control Panel\Desktop" /v "WaitToKillAppTimeout" /t REG_SZ /d "2000" /f >nul
+reg add "HKCU\Control Panel\Desktop" /v "HungAppTimeout" /t REG_SZ /d "2000" /f >nul
+goto :eof
+
+:RESTORE_SETTINGS
+echo.
+echo ==== KHOI PHUC CAI DAT MAC DINH ====
+echo [CANH BAO] Chuc nang nay chi khoi phuc mot so cai dat co ban
+echo.
+
+:: Khoi phuc Services
+echo [1/4] Khoi phuc Services...
+sc config "SysMain" start=auto >nul
+sc config "DiagTrack" start=auto >nul
+sc config "WSearch" start=auto >nul
+
+:: Khoi phuc Power Plan
+echo [2/4] Khoi phuc Power Plan...
+powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e >nul 2>&1
+
+:: Khoi phuc Visual Effects
+echo [3/4] Khoi phuc Visual Effects...
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /f >nul 2>&1
+
+:: Xoa mot so registry keys
+echo [4/4] Xoa registry tweaks...
+reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /f >nul 2>&1
+
+:: ĐẢM BẢO Print Spooler HOẠT ĐỘNG
+sc config "Spooler" start=auto >nul
+sc start "Spooler" >nul 2>&1
+
+echo.
+echo [SUCCESS] Da khoi phuc mot so cai dat mac dinh
+echo     Can khoi dong lai may de ap dung day du
+goto :eof
+
+:: ========================================
+:: KẾT THÚC
+:: ========================================
+
+exit /b 0
